@@ -14,6 +14,7 @@ DEPENDENCIES:
 	Alternatively, you may simply clone the repository https://bitbucket.org/eigen/eigen/ and link the directory to which you clone in the g++ -I/path/to/Eigen
 	Note that no installation is necessary. Simply downloading the header files and linking to the Eigen directory is sufficient
 
+	I assume that you have the g++ -std=c++11 compiler.
 
 
 COMPILATION INSTRUCTIONS:
