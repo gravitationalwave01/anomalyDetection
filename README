@@ -5,15 +5,13 @@ PROBLEM STATEMENT:
 
 COMPILATION INSTRUCTIONS:
 
-	To run this code you need to compile the source file ./src/process_log.cpp
+	To run this code you need to compile the source file ~/src/process_log.cpp
 
 	Please enter the directory ./src and use the compilation command
 		g++ -std=c++11 -I/path/to/Eigen process_log -o process_log
 
 	Afterwards, please run the script ~/run.sh in the home directory.
-	Note that in the ~/run.sh file you must specify four files: the location of the executable,
-		the locations of the batch.json and stream.json files, and the location of the output
-		flagged_purchases.json file	
+	Note that in the ~/run.sh file you must specify four files: the location of the executable, the locations of the batch.json and stream.json files, and the location of the output flagged_purchases.json file	
 
 
 DEPENDENCIES:
@@ -21,43 +19,32 @@ DEPENDENCIES:
 	I use a very simple library for interpreting the json data structure. 
 	The library is available online:
 		https://github.com/nlohmann/json
-	HOWEVER, only one single header file is necessary and is included in the ./src directory.
-	You do not need to download or install anything for the json interpreter.
+	HOWEVER, only one single header file is necessary and is included in the ./src directory. You do not need to download or install anything for the json interpreter.
 
 	
-	My code also uses the Eigen libraries. Please follow the instructions here to set up Eigen:
-		https://eigen.tuxfamily.org/dox/GettingStarted.html
-	Alternatively, you may simply clone the repository
-		https://bitbucket.org/eigen/eigen/
-	And link the directory to which you clone in the g++ -I/path/to/Eigen
-	Note that no installation is necessary. Simply downloading the header files
-		and linking to the Eigen directory is sufficient
+	My code also uses the Eigen libraries. Please follow the instructions here to set up Eigen: https://eigen.tuxfamily.org/dox/GettingStarted.html
+	Alternatively, you may simply clone the repository https://bitbucket.org/eigen/eigen/ and link the directory to which you clone in the g++ -I/path/to/Eigen
+	Note that no installation is necessary. Simply downloading the header files and linking to the Eigen directory is sufficient
 	
 
 ASSUMPTIONS MADE:
 
-	1) this solution is only efficient if the adjacency matrix is indeed sparse.
-	Otherwise, the solution will still work but will be slower than dense matrix representation
+	1) this solution is only efficient if the adjacency matrix is indeed sparse. Otherwise, the solution will still work but will be slower than dense matrix representation
 	
-	2) All possible unique users are listed in the input batch file. 
-	E.g. if the batch file has ids in the range [0,N] then the sample test will also have 
-	ids in the range [0,N]
+	2) All possible unique users are listed in the input batch file. E.g. if the batch file has ids in the range [0,N] then the sample test will also have ids in the range [0,N]
 
  	3) Input data is pre-sorted in chronological order
 
 
 KNOWN ISSUES:
 
-	The code currently runs very slowly for input batch files with more than 50,000 unique IDs.
-	This is because I store the full Adjacency matrix (in sparse form) and perform matrix operations on it.
+	The code currently runs very slowly for input batch files with more than 50,000 unique IDs. This is because I store the full Adjacency matrix (in sparse form) and perform matrix operations on it.
 	
-	Currently, this code can only process input data that is chronological order.
-	Please make sure that the batch and stream files are sorted in ascending chronological
-	order (e.g. earliest process first).
-	Otherwise, the code will return error code 2
+	Currently, this code can only process input data that is in chronological order. Please make sure that the batch and stream files are sorted in ascending chronological order (e.g. earliest process first). Otherwise, the code will return error code 2
 
 
 ERROR LOG:
 
-	the directory ~/log_output contains a file called error_log. 
-	If the calculation fails then the error messages are output to this log.
+	the directory ~/log_output contains a file called error_log. If the calculation fails then the error messages are output to this log.
+
+
