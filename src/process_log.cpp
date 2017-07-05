@@ -3,11 +3,14 @@
 //The full problem statement is decribed at the above URL, I will not repeat it here.
 
 //The solution presented here builds an adjancency matrix from the initial "batch" input.
-//The (sparse and symmetric) adjacency matrix has nonzero positive elements when two 
-// customers are friends, and a zero if they are not friends.
-//To determine whether two indivduals are friends of depth D (ie is there a series of 
-// friends of length D that connects them) we must take the adjacency matrix to the Dth power
-//In addition, each user's purchase history is stored in a queue of size T
+//The (sparse and symmetric) adjacency matrix has value True at element (i,j) when customers 
+// i and j are friends, and False if they are not friends.
+//To determine the social network of depth D of customer i, we can take the ith row of the 
+//  adjacency matrix and multiply it by the full adjacency matrix D-1 times
+
+//The purchase history of each customer is stored as a deque, which is a like a queue
+//but with random element access.
+//The purchase histories of all customers are stored as a vector<deque>
 
 
 //Assumptions: 
@@ -32,6 +35,7 @@
 					//This code can be sped up (at the cost of installation ease) by using 
 					// a better json library. 
 #include<Eigen/Sparse> //Eigen is a matrix manipulation library. It's basically a C++ wrapper for LAPACK/BLAS
+#include<unsupported/Eigen/MatrixFunctions>
 
 
 using json = nlohmann::json; 
@@ -63,15 +67,11 @@ struct compare_purchase{
 //Note: it could be worth exploring the possibility of optimizing this by resizing to 
 //  a size LARGER than new_size. If I find that I resizing often then it's better to 
 //	just resize to a much larger size ONCE, rather than resize a little bit a bunch of times.
-void resize(Eigen::SparseMatrix<int,Eigen::RowMajor> *adMat, Eigen::SparseMatrix<int,Eigen::RowMajor> *ex_adMat, std::vector<std::deque<purchase>*>* purchase_history, int new_size,int *num_customers)
+void resize(Eigen::SparseMatrix<bool,Eigen::RowMajor> *adMat, std::vector<std::deque<purchase>*>* purchase_history, int new_size,int *num_customers)
 {
 	adMat->resize(new_size+1,new_size+1); 
-	ex_adMat->resize(new_size+1,new_size+1); 
 	for (int i=purchase_history->size();i<new_size+1;i++)
-	{
 		adMat->coeffRef(i,i)=1;
-		ex_adMat->coeffRef(i,i)=1;
-	}
 	
 	for (int i=purchase_history->size(); i<new_size+1;i++)
 		purchase_history->push_back(new std::deque<purchase>());
@@ -204,15 +204,11 @@ int main(int argc, char* argv[])
 	//The initial size of the matrix is small, but it will be expanded 
 	//	if the number of customers is larger than 10
 	int num_customers = 10;	
-	Eigen::SparseMatrix<int,Eigen::RowMajor> adMat(num_customers, num_customers); 
-	Eigen::SparseMatrix<int,Eigen::RowMajor> ex_adMat(num_customers, num_customers);
+	Eigen::SparseMatrix<bool,Eigen::RowMajor> adMat(num_customers, num_customers); 
 
 	//populate the diagonals of the adjacency matrix:
 	for (int i=0;i<num_customers;i++)
-	{
 		adMat.coeffRef(i,i)=1;
-		ex_adMat.coeffRef(i,i)=1;
-	}
 
 	//Declare some useful variables:
 	int itmp; //variable for short-term integer storage
@@ -238,9 +234,14 @@ int main(int argc, char* argv[])
 	//first we must read the batch file, check the data for errors, 
 	// reformat the data (cast the inputs as the appropriate data types),
 	// build the adjacency matrix, and save all the users buying history
+	int count =0;
 	std::cout << "READING BATCH FILE" << std::endl;
 	while (!batch.eof())
 	{	
+		count++;
+		if (count % 1000 == 0)
+			std:: cout << count << std::endl;
+		std::cout.flush();
 		json log;
 
 		//try to read a json element from the input file:
@@ -284,7 +285,7 @@ int main(int argc, char* argv[])
 			//check if new ID falls outside of matrix bounds
 			//if it does, resize the matrices and purchase_history vectors
 			if (itmp >= num_customers)
-				resize(&adMat,&ex_adMat,&purchase_history,itmp,&num_customers);
+				resize(&adMat,&purchase_history,itmp,&num_customers);
 			
 			//store purchase information in a purchase structure:
 			purchase cur;
@@ -313,7 +314,7 @@ int main(int argc, char* argv[])
 			//check if new IDs fall outside of matrix bounds
 			//if they do, resize the matrices and purchase_history vectors
 			if (std::max(id1,id2) >= num_customers)
-				resize(&adMat,&ex_adMat,&purchase_history,std::max(id1,id2),&num_customers);
+				resize(&adMat,&purchase_history,std::max(id1,id2),&num_customers);
 
 
 			ss.str(std::string()); ss.clear();
@@ -330,9 +331,6 @@ int main(int argc, char* argv[])
 				adMat.coeffRef(id1,id2)=0;
 				adMat.coeffRef(id2,id1)=0;
 			}
-			ex_adMat = adMat.pruned();
-			for (int i=0;i<=D;i++)
-				ex_adMat = (ex_adMat * adMat).pruned();//pruning 0s is done on the fly [complexity 0]
 		}
 
 	}
@@ -358,9 +356,15 @@ exact same way, but this time check for anomalous purchasing behavior
 	std::cout << "READING STREAM FILE" << std::endl;
 	double mean;
 	double std;
-
-	while (!stream.eof())
+	count = 0;
+	//ASIDE: You may notice that the code below is repetitive with the code above. 
+	//	I am aware that this is bad practice and I should modularize this json workup code,
+	//	However, I'm short on time and there are bigger/more important issues with the code
+	while (!stream.eof()) 
 	{	
+		count++;
+		if (count%10==0)
+			std::cout << count << std::endl;
 		json log;
 
 		//try to read a json element from the input file:
@@ -413,15 +417,20 @@ exact same way, but this time check for anomalous purchasing behavior
 			cur.t = time;
 			cur.pos = num_time;
 
-			std::vector<std::deque<purchase>*> network_purchases;
-			Eigen::SparseMatrix<int, Eigen::RowMajor> neighbors=ex_adMat.row(log["id"].get<int>());
+
+			//for convenience, give this user a name: Sally
+			//Now we must determine who is in Sally's social network, and whether her purchase is anomalous
+			std::vector<std::deque<purchase>*> network_purchases; //single out the purchases of Sally's network
+			Eigen::SparseMatrix<bool, Eigen::RowMajor> neighbors=adMat.row(log["id"].get<int>()); //These are Sally's friends
+			for (int i=0; i<D-1; i++)
+				neighbors = neighbors * adMat; //each multiplication by adMat gives another layer of Sally's network
+
+			//At this point, neighbors stores a vector<bool> that is true for Sally's friends of degree D 
 			for (int i=0;i<num_customers;i++)
 			{
-				if (i==log["id"]) continue; //exclude this user from his own network
-				if (neighbors.coeffRef(0,i)>=1) 
-				{
-					network_purchases.push_back(purchase_history.at(i));
-				}
+				if (i==log["id"]) continue; //exclude Sally her own network
+				if (neighbors.coeffRef(0,i)) 
+					network_purchases.push_back(purchase_history.at(i)); 
 			}
 			
 			//test whether this purchase is anomalous
@@ -455,6 +464,48 @@ exact same way, but this time check for anomalous purchasing behavior
 		}
 		else //befriend or unfriend
 		{
+			int id1,id2;
+			//convert both IDs to ints:
+			ss.str(std::string()); ss.clear();
+			ss << log["id1"];
+			id1 = atoi(ss.str().substr(1,ss.str().size()-2).c_str()); //convert id1 to int
+			log["id1"] = itmp;
+			ss.str(std::string()); ss.clear();
+			ss << log["id2"]; 
+			id2 = atoi(ss.str().substr(1,ss.str().size()-2).c_str()); //convert id2 to int
+			log["id2"] = itmp;
+
+			//check if new IDs fall outside of matrix bounds
+			//if they do, resize the matrices and purchase_history vectors
+			if (std::max(id1,id2) >= num_customers)
+				resize(&adMat,&purchase_history,std::max(id1,id2),&num_customers);
+
+
+			ss.str(std::string()); ss.clear();
+			ss << log["event_type"];
+			if (std::string("\"befriend\"").compare(ss.str())==0)
+			{
+				//add friendship to adjacency matrix
+				adMat.coeffRef(id1,id2)=1;
+				adMat.coeffRef(id2,id1)=1;
+			}
+			else  //unfriend
+			{
+				//remove friendship from adjancency matrix
+				adMat.coeffRef(id1,id2)=0;
+				adMat.coeffRef(id2,id1)=0;
+			}
+		}
+	}
+
+	std::cout << "...DONE" << std::endl;
+	for (int i=0;i<num_customers;i++)
+		delete purchase_history.at(i); 
+}
+
+
+/*
+old code for the stream workup
 			//convert both IDs to ints:
 			ss.str(std::string()); ss.clear();
 			ss << log["id1"];
@@ -480,16 +531,4 @@ exact same way, but this time check for anomalous purchasing behavior
 				adMat.coeffRef(log["id1"].get<int>(),log["id2"].get<int>())=0;
 				adMat.coeffRef(log["id2"].get<int>(),log["id1"].get<int>())=0;
 			}
-			ex_adMat = adMat.pruned();
-			for (int i=0;i<=D;i++)
-				ex_adMat = (ex_adMat * adMat).pruned();//pruning 0s is done on the fly [complexity 0]
-		}
-	}
-
-	std::cout << "...DONE" << std::endl;
-	for (int i=0;i<num_customers;i++)
-		delete purchase_history.at(i); 
-}
-
-
-
+*/

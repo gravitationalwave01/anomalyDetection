@@ -2,18 +2,6 @@ PROBLEM STATEMENT:
 	Please see the url https://github.com/InsightDataScience/anomaly_detection for the full problem statement.
 
 
-
-COMPILATION INSTRUCTIONS:
-
-	To run this code you need to compile the source file ~/src/process_log.cpp
-
-	Please enter the directory ./src and use the compilation command
-		g++ -std=c++11 -I/path/to/Eigen process_log -o process_log
-
-	Afterwards, please run the script ~/run.sh in the home directory.
-	Note that in the ~/run.sh file you must specify four files: the location of the executable, the locations of the batch.json and stream.json files, and the location of the output flagged_purchases.json file	
-
-
 DEPENDENCIES:
 
 	I use a very simple library for interpreting the json data structure. 
@@ -25,22 +13,26 @@ DEPENDENCIES:
 	My code also uses the Eigen libraries. Please follow the instructions here to set up Eigen: https://eigen.tuxfamily.org/dox/GettingStarted.html
 	Alternatively, you may simply clone the repository https://bitbucket.org/eigen/eigen/ and link the directory to which you clone in the g++ -I/path/to/Eigen
 	Note that no installation is necessary. Simply downloading the header files and linking to the Eigen directory is sufficient
+
+
+
+COMPILATION INSTRUCTIONS:
+
+	To run this code you need to compile the source file ~/src/process_log.cpp
+
+	Please enter the directory ./src and use the compilation command
+		g++ -std=c++11 -I/path/to/Eigen process_log -o process_log
+
+	Afterwards, please run the script ~/run.sh in the home directory.
+	Note that in the ~/run.sh file you must specify four files: the location of the executable, the locations of the batch.json and stream.json files, and the location of the output flagged_purchases.json file	
+
 	
 
 ASSUMPTIONS MADE:
 
-	1) this solution is only efficient if the adjacency matrix is indeed sparse. Otherwise, the solution will still work but will be slower than dense matrix representation
+	1) I assume that each customer only knows a small number of other customers (e.g. the adjacency matrix is sparse). The code will work even without this assumption, but it will be very slow
 	
-	2) All possible unique users are listed in the input batch file. E.g. if the batch file has ids in the range [0,N] then the sample test will also have ids in the range [0,N]
-
- 	3) Input data is pre-sorted in chronological order
-
-
-KNOWN ISSUES:
-
-	The code currently runs very slowly for input batch files with more than 50,000 unique IDs. This is because I store the full Adjacency matrix (in sparse form) and perform matrix operations on it.
-	
-	Currently, this code can only process input data that is in chronological order. Please make sure that the batch and stream files are sorted in ascending chronological order (e.g. earliest process first). Otherwise, the code will return error code 2
+ 	2) I assume that all input data is pre-sorted in chronological order. If the input is not in chronological order then the code will spit out an error.
 
 
 ERROR LOG:
