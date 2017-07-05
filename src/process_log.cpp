@@ -238,10 +238,6 @@ int main(int argc, char* argv[])
 	std::cout << "READING BATCH FILE" << std::endl;
 	while (!batch.eof())
 	{	
-		count++;
-		if (count % 1000 == 0)
-			std:: cout << count << std::endl;
-		std::cout.flush();
 		json log;
 
 		//try to read a json element from the input file:
@@ -356,15 +352,11 @@ exact same way, but this time check for anomalous purchasing behavior
 	std::cout << "READING STREAM FILE" << std::endl;
 	double mean;
 	double std;
-	count = 0;
 	//ASIDE: You may notice that the code below is repetitive with the code above. 
 	//	I am aware that this is bad practice and I should modularize this json workup code,
 	//	However, I'm short on time and there are bigger/more important issues with the code
 	while (!stream.eof()) 
 	{	
-		count++;
-		if (count%10==0)
-			std::cout << count << std::endl;
 		json log;
 
 		//try to read a json element from the input file:
@@ -418,7 +410,10 @@ exact same way, but this time check for anomalous purchasing behavior
 			cur.pos = num_time;
 
 
-			//for convenience, give this user a name: Sally
+			//The next few lines are the crux of this code ----- 
+			//We will compute this particular user's social network and determine whether his/her purchase is anomalous
+
+			//for convenience, give this particular user a name: Sally
 			//Now we must determine who is in Sally's social network, and whether her purchase is anomalous
 			std::vector<std::deque<purchase>*> network_purchases; //single out the purchases of Sally's network
 			Eigen::SparseMatrix<bool, Eigen::RowMajor> neighbors=adMat.row(log["id"].get<int>()); //These are Sally's friends
